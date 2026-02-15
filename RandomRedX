@@ -91,7 +91,7 @@ if __name__ == "__main__":
         print("Error: Invalid URL. Please provide a valid URL (e.g., https://example.com).")
         sys.exit(1)
 
-    # Optional: Enforce HTTPS
+    # Optional: Enforce HTTPS scan
     if not url.startswith("https://"):
         print("Warning: The URL does not use HTTPS. Consider using a secure connection.")
 
