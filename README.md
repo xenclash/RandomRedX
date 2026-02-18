@@ -3,7 +3,7 @@ A web scanner that checks for vulnerabilities via links &amp; HTTP headers.
 
 ❌ RandomRedX — Ethical Vulnerability Scanner.
 
-RandomRedX is a work in progress student project Python based security utility that analyzes web links and HTTP headers to detect potential vulnerabilities and misconfigurations.
+RandomRedX is a small work in progress student project Python based security utility that analyzes web links and HTTP headers to detect potential vulnerabilities and misconfigurations.
 It’s built for ethical hackers, security researchers, and web administrators who want to strengthen the security posture of their applications.
 
 ⚙️ Features.
