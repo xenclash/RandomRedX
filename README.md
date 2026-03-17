@@ -1,5 +1,5 @@
 # RandomRedX
-A web scanner that checks for vulnerabilities via links &amp; HTTP headers.
+A web scanner that checks for vulnerabilities via links &amp; unsecure HTTP headers.
 
 ❌ RandomRedX — Ethical Vulnerability Scanner.
 
