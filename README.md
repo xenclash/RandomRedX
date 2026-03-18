@@ -26,3 +26,5 @@ Before scanning any website, you must obtain explicit permission from the owner.
 
 Unauthorized scanning of public websites or servers is illegal in many jurisdictions and strictly prohibited.
 Use responsibly — the goal is to improve security, not exploit vulnerabilities.
+
+> - AI assisted enhancements applied to debugging, optimization, and automation
