@@ -78,7 +78,7 @@ def check_headers(url):
         print(f"Error fetching the URL: {e}")
 
 if __name__ == "__main__":
-    # Check if a URL was provided as a command-line argument
+    # Check if URL was provided as a command-line argument
     if len(sys.argv) < 2:
         print("Usage: randomredx <url>")
         sys.exit(1)
