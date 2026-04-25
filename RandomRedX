@@ -16,7 +16,7 @@ print(""" _______  _______  _        ______   _______  _______  _______  _______
                           | 2026 Created by @xenclash on Github |
 """)
 
-# List of important security headers
+# List all important security headers
 security_headers = [
     'Strict-Transport-Security',
     'X-Content-Type-Options',
