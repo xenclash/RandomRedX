@@ -24,7 +24,7 @@ It’s built for ethical hackers, security researchers, CTF Players, and web adm
 This project is intended for educational and authorized penetration testing purposes only.
 Before scanning any websites, you must obtain explicit permission from the owner.
 
-Unauthorized scanning of public websites or servers is illegal in many jurisdictions and strictly prohibited.
+Unauthorized scanning of public websites or servers is illegal in many jurisdictions, and strictly prohibited.
 Use responsibly, the goal is to improve security not exploit vulnerabilities.
 
 > - All code is made by scratch, then used Copilot to assist with enhancements applied to debugging, and optimization.
