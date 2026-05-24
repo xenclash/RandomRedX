@@ -4,7 +4,7 @@ import requests
 import sys
 import validators
 
-# basic user interface header
+# Basic user interface header
 print(""" _______  _______  _        ______   _______  _______  _______  _______  ______
 (  ____ )(  ___  )( (    /|(  __  \ (  ___  )(       )(  ____ )(  ____ \(  __  \ |\     /|
 | (    )|| (   ) ||  \  ( || (  \  )| (   ) || () () || (    )|| (    \/| (  \  )( \   / )
