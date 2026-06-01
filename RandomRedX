@@ -83,7 +83,7 @@ if __name__ == "__main__":
         print("Usage: randomredx <url>")
         sys.exit(1)
 
-    # Get the URL from the command-line arguments
+    # Get the URL from the command line arguments
     url = sys.argv[1].strip()
 
     # Validate the URL
