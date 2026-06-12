@@ -93,6 +93,6 @@ if __name__ == "__main__":
 
     # Optional: Enforce HTTP or HTTPS scans
     if not url.startswith("https://"):
-        print("Warning: The URL does not use HTTPS. Consider using a secure connection.")
+        print("Warning: The URL does not use HTTPS, consider using a secure connection.")
 
     check_headers(url)
