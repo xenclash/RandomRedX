@@ -53,7 +53,7 @@ def check_headers(url):
                     if 'max-age' not in response.headers[header]:
                         misconfigured_headers.append(f"{header}: {response.headers[header]} (missing max-age)")
 
-        # Print all the missing headers
+        # Print all missing headers
         if missing_headers:
             print("Missing headers:")
             for header in missing_headers:
