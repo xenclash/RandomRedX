@@ -3,96 +3,454 @@
 import requests
 import sys
 import validators
+import json
+import argparse
+import ssl
+import socket
+import re
+import io
+import contextlib
+from urllib.parse import urlparse
+from datetime import datetime, timezone
 
-# Basic user interface header
-print(""" _______  _______  _        ______   _______  _______  _______  _______  ______
-(  ____ )(  ___  )( (    /|(  __  \ (  ___  )(       )(  ____ )(  ____ \(  __  \ |\     /|
-| (    )|| (   ) ||  \  ( || (  \  )| (   ) || () () || (    )|| (    \/| (  \  )( \   / )
-| (____)|| (___) ||   \ | || |   ) || |   | || || || || (____)|| (__    | |   ) | \ (_) / 
-|     __)|  ___  || (\ \) || |   | || |   | || |(_)| ||     __)|  __)   | |   | |  ) _ (  
-| (\ (   | (   ) || | \   || |   ) || |   | || |   | || (\ (   | (      | |   ) | / ( ) \ 
-| ) \ \__| )   ( || )  \  || (__/  )| (___) || )   ( || ) \ \__| (____/\| (__/  )( /   \ )
-|/   \__/|/     \||/    )_)(______/ (_______)|/     \||/   \__/(_______/(______/ |/     \|
-                          | 2026 Created by @xenclash on Github |
-""")
+# ANSI color codes
+RED    = "\033[91m"
+YELLOW = "\033[93m"
+GREEN  = "\033[92m"
+CYAN   = "\033[96m"
+BOLD   = "\033[1m"
+DIM    = "\033[2m"
+RESET  = "\033[0m"
 
-# List of all important security HTTP/HTTPS headers
-security_headers = [
-    'Strict-Transport-Security',
-    'X-Content-Type-Options',
-    'X-Frame-Options',
-    'Content-Security-Policy',
-    'Referrer-Policy',
-    'Permissions-Policy',
-    'Access-Control-Allow-Origin'
+BANNER = """
+ ██▀███   ▄▄▄       ███▄    █ ▓█████▄  ▒█████   ███▄ ▄███▓ ██▀███  ▓█████ ▓█████▄ ▒██   ██▒
+▓██ ▒ ██▒▒████▄     ██ ▀█   █ ▒██▀ ██▌▒██▒  ██▒▓██▒▀█▀ ██▒▓██ ▒ ██▒▓█   ▀ ▒██▀ ██▌▒▒ █ █ ▒░
+▓██ ░▄█ ▒▒██  ▀█▄  ▓██  ▀█ ██▒░██   █▌▒██░  ██▒▓██    ▓██░▓██ ░▄█ ▒▒███   ░██   █▌░░  █   ░
+▒██▀▀█▄  ░██▄▄▄▄██ ▓██▒  ▐▌██▒░▓█▄   ▌▒██   ██░▒██    ▒██ ▒██▀▀█▄  ▒▓█  ▄ ░▓█▄   ▌ ░ █ █ ▒ 
+░██▓ ▒██▒ ▓█   ▓██▒▒██░   ▓██░░▒████▓ ░ ████▓▒░▒██▒   ░██▒░██▓ ▒██▒░▒████▒░▒████▓ ▒██▒ ▒██▒
+░ ▒▓ ░▒▓░ ▒▒   ▓▒█░░ ▒░   ▒ ▒  ▒▒▓  ▒ ░ ▒░▒░▒░ ░ ▒░   ░  ░░ ▒▓ ░▒▓░░░ ▒░ ░ ▒▒▓  ▒ ▒▒ ░ ░▓ ░
+  ░▒ ░ ▒░  ▒   ▒▒ ░░ ░░   ░ ▒░ ░ ▒  ▒   ░ ▒ ▒░ ░  ░      ░  ░▒ ░ ▒░ ░ ░  ░ ░ ▒  ▒ ░░   ░▒ ░
+  ░░   ░   ░   ▒      ░   ░ ░  ░ ░  ░ ░ ░ ░ ▒  ░      ░     ░░   ░    ░    ░ ░  ░  ░    ░  
+   ░           ░  ░         ░    ░        ░ ░         ░      ░        ░  ░   ░     ░    ░  
+                               ░                                           ░               
+                           | 2026 Created by @xenclash on Github |
+"""
+
+# Security headers with severity and remediation guidance
+SECURITY_HEADERS = {
+    'Strict-Transport-Security': {
+        'severity': 'HIGH',
+        'description': 'Forces HTTPS connections, preventing protocol downgrade attacks',
+        'recommended': 'max-age=31536000; includeSubDomains',
+    },
+    'Content-Security-Policy': {
+        'severity': 'HIGH',
+        'description': 'Mitigates XSS and data injection by whitelisting content sources',
+        'recommended': "default-src 'self'",
+    },
+    'X-Content-Type-Options': {
+        'severity': 'MEDIUM',
+        'description': 'Prevents browsers from MIME-sniffing away from the declared content-type',
+        'recommended': 'nosniff',
+    },
+    'X-Frame-Options': {
+        'severity': 'MEDIUM',
+        'description': 'Protects against clickjacking by controlling iframe embedding',
+        'recommended': 'DENY or SAMEORIGIN',
+    },
+    'Referrer-Policy': {
+        'severity': 'LOW',
+        'description': 'Controls how much referrer information is included with requests',
+        'recommended': 'strict-origin-when-cross-origin',
+    },
+    'Permissions-Policy': {
+        'severity': 'LOW',
+        'description': 'Restricts which browser features and APIs the page may use',
+        'recommended': 'geolocation=(), microphone=(), camera=()',
+    },
+}
+
+# Headers that reveal server technology (information disclosure)
+DISCLOSURE_HEADERS = [
+    'Server',
+    'X-Powered-By',
+    'X-AspNet-Version',
+    'X-AspNetMvc-Version',
+    'X-Generator',
+    'X-Runtime',
+    'X-Drupal-Cache',
 ]
 
-def check_headers(url):
+ANSI_ESCAPE = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
+
+
+def _sev_color(severity):
+    return {'HIGH': RED, 'MEDIUM': YELLOW, 'LOW': DIM}.get(severity, RESET)
+
+
+# Header value validators
+
+def _check_hsts(value):
+    issues = []
+    lower = value.lower()
+    if 'max-age' not in lower:
+        issues.append("missing max-age directive")
+    else:
+        try:
+            max_age = int(lower.split('max-age=')[1].split(';')[0].strip())
+            if max_age < 31536000:
+                issues.append(f"max-age={max_age} is below the recommended minimum of 31536000 (1 year)")
+        except (IndexError, ValueError):
+            issues.append("could not parse max-age value")
+    if 'includesubdomains' not in lower:
+        issues.append("missing includeSubDomains directive")
+    return issues
+
+
+def _check_csp(value):
+    issues = []
+    if "'unsafe-inline'" in value:
+        issues.append("'unsafe-inline' weakens XSS protection")
+    if "'unsafe-eval'" in value:
+        issues.append("'unsafe-eval' allows script injection via eval()")
+    if 'default-src' not in value and 'script-src' not in value:
+        issues.append("missing default-src or script-src — policy may not restrict scripts")
+    return issues
+
+
+def _check_x_frame_options(value):
+    if value.upper() not in ('DENY', 'SAMEORIGIN'):
+        return [f"unrecognised value '{value}' — expected DENY or SAMEORIGIN"]
+    return []
+
+
+def _check_cors(value):
+    # Wildcard '*' means any origin can read cross-origin responses
+    if value.strip() == '*':
+        return ["wildcard '*' allows any origin to make cross-origin requests — verify this is intentional"]
+    return []
+
+
+# Per-feature checks
+
+def _check_cookies(response):
+    """Return list of (cookie_name, [issues]) for cookies missing security flags."""
+    raw_cookies = [v for k, v in response.raw.headers.items() if k.lower() == 'set-cookie']
+    findings = []
+    for cookie in raw_cookies:
+        name = cookie.split('=')[0].strip()
+        lower = cookie.lower()
+        issues = []
+        if 'secure' not in lower:
+            issues.append("missing Secure flag (cookie transmitted over HTTP)")
+        if 'httponly' not in lower:
+            issues.append("missing HttpOnly flag (readable by JavaScript)")
+        if 'samesite' not in lower:
+            issues.append("missing SameSite attribute (CSRF risk)")
+        if issues:
+            findings.append((name, issues))
+    return findings
+
+
+def _check_tls(hostname, port=443):
+    """Return TLS protocol, cipher, and certificate expiry for a host."""
     try:
-        # Send a GET request to the website with a timeout
-        response = requests.get(url, timeout=10)
+        ctx = ssl.create_default_context()
+        with ctx.wrap_socket(
+            socket.create_connection((hostname, port), timeout=10),
+            server_hostname=hostname,
+        ) as sock:
+            cert = sock.getpeercert()
+            return {
+                'version': sock.version(),
+                'cipher':  sock.cipher()[0],
+                'expiry':  cert.get('notAfter', 'unknown'),
+            }
+    except ssl.SSLCertVerificationError as e:
+        return {'error': f"Certificate verification failed: {e}"}
+    except Exception as e:
+        return {'error': str(e)}
 
-        # Inform the user if a redirect has occurred
-        if response.history:
-            print(f"Redirected to: {response.url}\n")
 
-        print(f"Checking headers for: {url}\n")
-        missing_headers = []
-        misconfigured_headers = []
+# Core scanner
 
-        # Loop through each header in the security list
-        for header in security_headers:
-            if header not in response.headers:
-                missing_headers.append(header)
-            else:
-                # Specific checks for misconfigured headers
-                if header == 'Access-Control-Allow-Origin':
-                    if response.headers[header] != '*':
-                        misconfigured_headers.append(f"{header}: {response.headers[header]} (non-wildcard allowed)")
-                elif header == 'Strict-Transport-Security':
-                    if 'max-age' not in response.headers[header]:
-                        misconfigured_headers.append(f"{header}: {response.headers[header]} (missing max-age)")
+def scan_url(url, check_ssl=True):
+    """Scan a single URL and return a findings dict. Never raises."""
+    findings = {
+        'url':                   url,
+        'timestamp':             datetime.now(timezone.utc).isoformat(),
+        'final_url':             None,
+        'status_code':           None,
+        'redirect_chain':        [],
+        'missing_headers':       [],
+        'misconfigured_headers': [],
+        'info_disclosure':       [],
+        'cookie_issues':         [],
+        'tls':                   None,
+        'present_headers':       [],
+        'risk_score':            0,
+    }
 
-        # Print all missing headers
-        if missing_headers:
-            print("Missing headers:")
-            for header in missing_headers:
-                print(f"- {header}")
-        else:
-            print("All security headers are present!")
-
-        # Print misconfigured headers
-        if misconfigured_headers:
-            print("\nMisconfigured headers:")
-            for header in misconfigured_headers:
-                print(f"- {header}")
-        else:
-            print("No misconfigurations found!")
-
-        # Summary
-        print("\nSummary:")
-        print(f"- Total missing headers: {len(missing_headers)}")
-        print(f"- Total misconfigured headers: {len(misconfigured_headers)}")
-
+    try:
+        response = requests.get(url, timeout=10, allow_redirects=True)
     except requests.exceptions.RequestException as e:
-        print(f"Error fetching the URL: {e}")
+        findings['error'] = str(e)
+        return findings
 
-if __name__ == "__main__":
-    # Check if the URL was provided as a command line argument
-    if len(sys.argv) < 2:
-        print("Usage: randomredx <url>")
+    findings['final_url']   = response.url
+    findings['status_code'] = response.status_code
+
+    if response.history:
+        findings['redirect_chain'] = [r.url for r in response.history] + [response.url]
+
+    headers = response.headers
+
+    # Security header presence + value checks
+    for header, meta in SECURITY_HEADERS.items():
+        if header not in headers:
+            findings['missing_headers'].append({
+                'header':      header,
+                'severity':    meta['severity'],
+                'description': meta['description'],
+                'recommended': meta['recommended'],
+            })
+            findings['risk_score'] += {'HIGH': 20, 'MEDIUM': 10, 'LOW': 5}[meta['severity']]
+        else:
+            value = headers[header]
+            findings['present_headers'].append(header)
+            issues = []
+            if header == 'Strict-Transport-Security':
+                issues = _check_hsts(value)
+            elif header == 'Content-Security-Policy':
+                issues = _check_csp(value)
+            elif header == 'X-Frame-Options':
+                issues = _check_x_frame_options(value)
+            if issues:
+                findings['misconfigured_headers'].append({
+                    'header':   header,
+                    'value':    value,
+                    'severity': meta['severity'],
+                    'issues':   issues,
+                })
+                findings['risk_score'] += {'HIGH': 10, 'MEDIUM': 5, 'LOW': 2}[meta['severity']]
+
+    # CORS check (Access-Control-Allow-Origin is optional so checked separately)
+    acao = headers.get('Access-Control-Allow-Origin')
+    if acao:
+        cors_issues = _check_cors(acao)
+        if cors_issues:
+            findings['misconfigured_headers'].append({
+                'header':   'Access-Control-Allow-Origin',
+                'value':    acao,
+                'severity': 'HIGH',
+                'issues':   cors_issues,
+            })
+            findings['risk_score'] += 15
+
+    # Technology disclosure headers
+    for h in DISCLOSURE_HEADERS:
+        if h in headers:
+            findings['info_disclosure'].append({'header': h, 'value': headers[h]})
+            findings['risk_score'] += 3
+
+    # Cookie security flags
+    findings['cookie_issues'] = _check_cookies(response)
+    findings['risk_score'] += len(findings['cookie_issues']) * 5
+
+    # TLS info (HTTPS targets only)
+    if check_ssl and response.url.startswith('https://'):
+        parsed = urlparse(response.url)
+        findings['tls'] = _check_tls(parsed.hostname)
+
+    return findings
+
+
+# Output helpers
+
+def _risk_label(score):
+    if score >= 60:
+        return f"{RED}{BOLD}CRITICAL{RESET}"
+    if score >= 40:
+        return f"{RED}HIGH{RESET}"
+    if score >= 20:
+        return f"{YELLOW}MEDIUM{RESET}"
+    if score > 0:
+        return f"{YELLOW}LOW{RESET}"
+    return f"{GREEN}MINIMAL{RESET}"
+
+
+def print_findings(findings, verbose=False):
+    url = findings['url']
+    print(f"\n{BOLD}{CYAN}{'='*70}{RESET}")
+    print(f"{BOLD}Target    :{RESET} {url}")
+    if findings.get('final_url') and findings['final_url'] != url:
+        print(f"{BOLD}Final URL :{RESET} {findings['final_url']}")
+    if findings.get('status_code'):
+        print(f"{BOLD}Status    :{RESET} {findings['status_code']}")
+    if len(findings.get('redirect_chain', [])) > 1:
+        print(f"{BOLD}Redirects :{RESET} {' -> '.join(findings['redirect_chain'])}")
+    print(f"{BOLD}{CYAN}{'='*70}{RESET}\n")
+
+    if findings.get('error'):
+        print(f"  {RED}Error: {findings['error']}{RESET}\n")
+        return
+
+    # TLS info
+    tls = findings.get('tls')
+    if tls:
+        print(f"{BOLD}TLS / Certificate{RESET}")
+        if 'error' in tls:
+            print(f"  {YELLOW}{tls['error']}{RESET}")
+        else:
+            print(f"  Protocol : {tls['version']}")
+            print(f"  Cipher   : {tls['cipher']}")
+            print(f"  Expires  : {tls['expiry']}")
+        print()
+
+    # Missing headers
+    missing = findings['missing_headers']
+    print(f"{BOLD}Missing Security Headers  ({len(missing)}){RESET}")
+    if missing:
+        for m in missing:
+            col = _sev_color(m['severity'])
+            print(f"  {col}[{m['severity']:6}]{RESET} {m['header']}")
+            print(f"           {DIM}{m['description']}{RESET}")
+            print(f"           Recommended: {m['recommended']}")
+    else:
+        print(f"  {GREEN}All security headers are present.{RESET}")
+    print()
+
+    # Misconfigured headers
+    misconf = findings['misconfigured_headers']
+    print(f"{BOLD}Misconfigured Headers  ({len(misconf)}){RESET}")
+    if misconf:
+        for m in misconf:
+            col = _sev_color(m['severity'])
+            print(f"  {col}[{m['severity']:6}]{RESET} {m['header']}: {DIM}{m['value'][:80]}{RESET}")
+            for issue in m['issues']:
+                print(f"           {YELLOW}-> {issue}{RESET}")
+    else:
+        print(f"  {GREEN}No header misconfigurations detected.{RESET}")
+    print()
+
+    # Information disclosure
+    disc = findings['info_disclosure']
+    if disc:
+        print(f"{BOLD}Information Disclosure{RESET}")
+        for d in disc:
+            print(f"  {YELLOW}[INFO  ]{RESET} {d['header']}: {d['value']}")
+        print()
+
+    # Cookie issues
+    cookies = findings['cookie_issues']
+    if cookies:
+        print(f"{BOLD}Cookie Security Issues  ({len(cookies)} cookie(s) affected){RESET}")
+        for name, issues in cookies:
+            print(f"  {YELLOW}[COOKIE]{RESET} {name}")
+            for issue in issues:
+                print(f"           -> {issue}")
+        print()
+
+    # Present headers (verbose only)
+    if verbose and findings.get('present_headers'):
+        print(f"{BOLD}Present Security Headers{RESET}")
+        for h in findings['present_headers']:
+            print(f"  {GREEN}+{RESET} {h}")
+        print()
+
+    score = findings['risk_score']
+    print(f"{BOLD}Risk Score: {score}  --  {_risk_label(score)}{RESET}\n")
+
+
+def _strip_ansi(text):
+    return ANSI_ESCAPE.sub('', text)
+
+
+# Entry point
+
+def main():
+    print(BANNER)
+
+    parser = argparse.ArgumentParser(
+        prog='randomredx',
+        description='RandomRedX -- HTTP Security Header Scanner',
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog=(
+            "examples:\n"
+            "  randomredx https://example.com\n"
+            "  randomredx -f urls.txt --json -o report.json\n"
+            "  randomredx https://example.com -v --no-ssl\n"
+        ),
+    )
+    parser.add_argument('url',           nargs='?', help='Target URL to scan')
+    parser.add_argument('-f', '--file',  help='File with URLs to scan (one per line)')
+    parser.add_argument('-j', '--json',  action='store_true', help='Output results as JSON')
+    parser.add_argument('-o', '--output', help='Save results to a file')
+    parser.add_argument('-v', '--verbose', action='store_true',
+                        help='Also list correctly-set security headers')
+    parser.add_argument('--no-ssl', action='store_true', help='Skip TLS/SSL certificate checks')
+    args = parser.parse_args()
+
+    # Collect URLs
+    urls = []
+    if args.file:
+        try:
+            with open(args.file) as fh:
+                urls = [line.strip() for line in fh if line.strip()]
+        except FileNotFoundError:
+            print(f"{RED}Error: file '{args.file}' not found.{RESET}")
+            sys.exit(1)
+    elif args.url:
+        urls = [args.url]
+    else:
+        parser.print_help()
         sys.exit(1)
 
-    # Get the URL from the command line arguments
-    url = sys.argv[1].strip()
+    # Validate URLs
+    valid_urls = []
+    for url in urls:
+        if not validators.url(url):
+            print(f"{YELLOW}Skipping invalid URL: {url}{RESET}")
+            continue
+        if not url.startswith('https://'):
+            print(f"{YELLOW}Warning: {url} does not use HTTPS -- some checks will be limited.{RESET}")
+        valid_urls.append(url)
 
-    # Validate the URL
-    if not validators.url(url):
-        print("Error: Invalid URL. Please provide a valid URL (e.g., https://example.com).")
+    if not valid_urls:
+        print(f"{RED}No valid URLs to scan.{RESET}")
         sys.exit(1)
 
-    # Optional: Enforce HTTP or HTTPS scans
-    if not url.startswith("https://"):
-        print("Warning: The URL does not use HTTPS, consider using a secure connection.")
+    # Run scans
+    all_findings = []
+    for url in valid_urls:
+        print(f"{DIM}Scanning {url} ...{RESET}")
+        result = scan_url(url, check_ssl=not args.no_ssl)
+        all_findings.append(result)
 
-    check_headers(url)
+    # Output
+    if args.json:
+        output_text = json.dumps(all_findings, indent=2)
+        print(output_text)
+        if args.output:
+            with open(args.output, 'w') as fh:
+                fh.write(output_text)
+            print(f"\n{GREEN}JSON report saved to {args.output}{RESET}")
+    else:
+        if args.output:
+            buf = io.StringIO()
+            with contextlib.redirect_stdout(buf):
+                for result in all_findings:
+                    print_findings(result, verbose=args.verbose)
+            plain = _strip_ansi(buf.getvalue())
+            with open(args.output, 'w') as fh:
+                fh.write(plain)
+            for result in all_findings:
+                print_findings(result, verbose=args.verbose)
+            print(f"{GREEN}Text report saved to {args.output}{RESET}")
+        else:
+            for result in all_findings:
+                print_findings(result, verbose=args.verbose)
+
+
+if __name__ == '__main__':
+    main()
