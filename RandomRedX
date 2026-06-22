@@ -36,7 +36,7 @@ BANNER = """
                            | 2026 Created by @xenclash on Github |
 """
 
-# Security headers with severity and remediation guidance
+# security headers with severity and remediation guidance
 SECURITY_HEADERS = {
     'Strict-Transport-Security': {
         'severity': 'HIGH',
@@ -253,7 +253,7 @@ def scan_url(url, check_ssl=True):
             findings['info_disclosure'].append({'header': h, 'value': headers[h]})
             findings['risk_score'] += 3
 
-    # Cookie security flags
+    # cookie security flag
     findings['cookie_issues'] = _check_cookies(response)
     findings['risk_score'] += len(findings['cookie_issues']) * 5
 
