@@ -1,5 +1,5 @@
 # RandomRedX
-A W.I.P student project web scanner that checks for vulnerabilities via links &amp; unsecure HTTP headers.
+A WIP student project web scanner that checks for vulnerabilities via links &amp; unsecure HTTP headers. Use for Bug Bounties & Hack The Box (HTB)
 
 ❌ RandomRedX — Ethical Vulnerability Scanner.
 
@@ -27,4 +27,4 @@ Before scanning any websites, you must obtain explicit permission from the owner
 Unauthorized scanning of public websites or servers is illegal in many jurisdictions, and strictly prohibited.
 Use responsibly, the goal is to improve security not exploit vulnerabilities.
 
-> - All code is made by scratch, then used Copilot to assist with enhancements applied to debugging, and optimization.
+> - All code is made by scratch, then used ClaudeAI to assist with enhancements applied to suggestions, and optimization.
