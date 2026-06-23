@@ -265,7 +265,7 @@ def scan_url(url, check_ssl=True):
     return findings
 
 
-# Output helpers
+# Output help
 
 def _risk_label(score):
     if score >= 60:
