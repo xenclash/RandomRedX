@@ -172,7 +172,7 @@ def _check_tls(hostname, port=443):
         return {'error': str(e)}
 
 
-# Core scanner
+# The core scanner
 
 def scan_url(url, check_ssl=True):
     """Scan a single URL and return a findings dict. Never raises."""
