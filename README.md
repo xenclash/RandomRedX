@@ -1,9 +1,9 @@
 # RandomRedX
-A WIP student project web scanner that checks for vulnerabilities via links &amp; unsecure HTTP/HTTPS headers. Use for Bug Bounties & Hack The Box (HTB)
+A WIP student project web scanner that checks for vulnerabilities via links &amp; unsecure HTTP/HTTPS headers. Use for Bug Bounties & Hack The Box.
 
 ❌ RandomRedX — Ethical Vulnerability Scanner.
 
-RandomRedX is a small work in progress student project python based security utility that analyzes web links and HTTP/HTTPS headers to detect potential vulnerabilities and misconfigurations.
+RandomRedX is a small student project python based security utility that analyzes web links and HTTP/HTTPS headers to detect potential vulnerabilities and misconfigurations.
 It’s built for ethical hackers, security researchers, CTF Players, and web administrators who want to strengthen the security posture of their applications and services.
 
 ⚙️ Features.
