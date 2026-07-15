@@ -6,14 +6,14 @@ A WIP student project web scanner that checks for vulnerabilities via links &amp
 RandomRedX is a small student project python based security utility that analyzes web links and HTTP/HTTPS headers to detect potential vulnerabilities and misconfigurations.
 It’s built for ethical hackers, security researchers, CTF Players, and web administrators who want to strengthen the security posture of their applications and services.
 
-⚙️ Features.
+# Features.
 > - Scans URLs for common security headers (e.g., X-Frame-Options, Content-Security-Policy, Strict-Transport-Security)
 > - Detects missing or misconfigured HTTP headers
 > - Crawls and analyzes multiple links from a given domain
 > - Identifies basic vulnerabilities and best-practice violations
 > - Generates clean, readable scan reports (text or JSON)
 
-🚀 Getting Started.
+# Getting Started.
 1. Clone the Repository
 > git clone https://github.com/xenclash/RandomRedX.git
 2. Install Dependencies
