@@ -30,8 +30,8 @@ BANNER = """
 ░██▓ ▒██▒ ▓█   ▓██▒▒██░   ▓██░░▒████▓ ░ ████▓▒░▒██▒   ░██▒░██▓ ▒██▒░▒████▒░▒████▓ ▒██▒ ▒██▒
 ░ ▒▓ ░▒▓░ ▒▒   ▓▒█░░ ▒░   ▒ ▒  ▒▒▓  ▒ ░ ▒░▒░▒░ ░ ▒░   ░  ░░ ▒▓ ░▒▓░░░ ▒░ ░ ▒▒▓  ▒ ▒▒ ░ ░▓ ░
   ░▒ ░ ▒░  ▒   ▒▒ ░░ ░░   ░ ▒░ ░ ▒  ▒   ░ ▒ ▒░ ░  ░      ░  ░▒ ░ ▒░ ░ ░  ░ ░ ▒  ▒ ░░   ░▒ ░ 
-                             Unsecure HTTP/HTTPS header scanner
-                             | Created by @xenclash on Github |
+                                Unsecure HTTP header scanner
+                                  | Created by @xenclash |
 """
 
 # security headers with severity and remediation guidance
