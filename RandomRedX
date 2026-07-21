@@ -203,7 +203,7 @@ def scan_url(url, check_ssl=True):
 
     headers = response.headers
 
-    # Security header presence + value checks
+    # Security header presence & value checks
     for header, meta in SECURITY_HEADERS.items():
         if header not in headers:
             findings['missing_headers'].append({
