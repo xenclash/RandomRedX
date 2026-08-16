@@ -31,7 +31,7 @@ BANNER = """
 ░ ▒▓ ░▒▓░ ▒▒   ▓▒█░░ ▒░   ▒ ▒  ▒▒▓  ▒ ░ ▒░▒░▒░ ░ ▒░   ░  ░░ ▒▓ ░▒▓░░░ ▒░ ░ ▒▒▓  ▒ ▒▒ ░ ░▓ ░
   ░▒ ░ ▒░  ▒   ▒▒ ░░ ░░   ░ ▒░ ░ ▒  ▒   ░ ▒ ▒░ ░  ░      ░  ░▒ ░ ▒░ ░ ░  ░ ░ ▒  ▒ ░░   ░▒ ░ 
                                 Unsecure HTTP header scanner
-                                  | Created by @xenclash |
+                                | 2026 Created by @xenclash |
 """
 
 # security headers with severity and remediation guidance
