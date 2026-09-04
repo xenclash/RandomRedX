@@ -1,5 +1,5 @@
 # RandomRedX
-A WIP student project web scanner that checks for vulnerabilities via links &amp; unsecure HTTP/HTTPS headers. Use for Bug Bounties & Hack The Box.
+A WIP web scanner that checks for vulnerabilities via links &amp; unsecure HTTP/HTTPS headers. Use for Bug Bounties & Hack The Box.
 
 ❌ RandomRedX — Ethical Vulnerability Scanner.
 
